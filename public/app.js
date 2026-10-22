@@ -40,12 +40,36 @@ function renderMetrics(m) {
     `<div class="metric${i === 5 ? " hero" : ""}"><b>${esc(value)}</b><span>${esc(label)}${sub ? ` · ${esc(sub)}` : ""}</span></div>`).join("");
 }
 
+
+const RISK = { at_risk: "At risk", breached: "Missed same day" };
+const riskOf = (item) => data.briefing?.requests?.[item.id]?.risk;
+
+function renderBriefing(b, sl) {
+  const el = $("briefing");
+  if (!b) {
+    el.innerHTML = `<p class="note"><b>Same-day briefing:</b> not built yet. Build <code>briefing()</code> in src/briefing.js to show team leads which requests will miss the same-day reply.</p>`;
+    return;
+  }
+  if (b.error) { el.innerHTML = `<p class="note callout error">The briefing failed: ${esc(b.error)}</p>`; return; }
+  const t = b.totals || {};
+  const tiles = [["on_track", "On track", t.onTrack], ["at_risk", `At risk (over ${sl.atRiskAfterHours} h)`, t.atRisk],
+    ["breached", `Missed same day (over ${sl.firstResponseTargetHours} h)`, t.breached], ["answered", "Answered the same day", `${t.answeredSameDay ?? 0} of ${t.answered ?? 0}`]];
+  const teams = (b.teams || []).map((x) => `<tr><td>${esc(x.team)}</td><td>${x.open}</td><td>${x.atRisk}</td><td class="${x.breached ? "high" : ""}">${x.breached}</td><td>${Number(x.oldestWaitingHours).toFixed(1)} h</td></tr>`).join("");
+  const recs = (b.recommendations || []).map((r) => `<li><span>${esc(r.text)}</span>${r.approved
+    ? '<span class="ok">Approved by a lead</span>'
+    : `<button class="btn small" type="button" data-team="${esc(r.team)}">Approve</button>`}</li>`).join("") || '<li><span class="meta">No changes suggested.</span></li>';
+  el.innerHTML = `<div><h2>Same-day briefing</h2><div class="risk-tiles">${tiles.map(([k, l, v]) => `<div class="${k}"><b>${esc(v ?? 0)}</b><span>${esc(l)}</span></div>`).join("")}</div></div>
+    <div><h2>By team</h2><table class="teams"><thead><tr><th>Team</th><th>Open</th><th>At risk</th><th>Missed</th><th>Oldest wait</th></tr></thead><tbody>${teams}</tbody></table></div>
+    <div><h2>Suggested changes, for a lead to approve</h2><ul class="recs">${recs}</ul></div>`;
+}
+
 function renderList() {
   const filter = $("filter").value;
   const rows = data.items.filter((item) => {
     const [k] = stateOf(item);
     return filter === "all" || (filter === "untriaged" && k === "untriaged") || (filter === "draft" && k === "draft") ||
-      (filter === "person" && k === "person") || (filter === "approved" && k === "approved");
+      (filter === "person" && k === "person") || (filter === "approved" && k === "approved") ||
+      (filter === "risk" && ["at_risk", "breached"].includes(riskOf(item)));
   });
   $("items").innerHTML = rows.map((item) => {
     const [k, label] = stateOf(item);
@@ -53,7 +77,7 @@ function renderList() {
     const cat = t.category ? CATEGORY[t.category] || t.category : "";
     return `<li><button type="button" data-id="${item.id}" aria-current="${item.id === selected}">
       <span class="subj">${esc(item.subject)}</span><span class="state ${k}">${esc(label)}</span>
-      <span class="meta">${esc(item.customer)} · ${esc(item.channel)} · ${ago(item.receivedAt)}${cat ? ` · ${esc(cat)}` : ""}${t.urgency === "high" ? ' · <span class="high">High urgency</span>' : ""}</span>
+      <span class="meta">${esc(item.customer)} · ${esc(item.channel)} · ${ago(item.receivedAt)}${cat ? ` · ${esc(cat)}` : ""}${t.urgency === "high" ? ' · <span class="high">High urgency</span>' : ""}${RISK[riskOf(item)] ? ` · <span class="state ${riskOf(item)}">${RISK[riskOf(item)]}</span>` : ""}</span>
     </button></li>`;
   }).join("") || `<li><p class="empty" style="padding:14px 18px">Nothing here.</p></li>`;
 }
@@ -102,6 +126,7 @@ async function load() {
   data = await res.json();
   $("model").textContent = data.model.available ? "Model: Azure OpenAI" : "Model: offline";
   renderMetrics(data.metrics);
+  renderBriefing(data.briefing, data.serviceLevels);
   renderList();
   const editing = document.activeElement && document.activeElement.id === "draft";
   if (!editing) renderDetail();
@@ -127,6 +152,12 @@ $("detail").addEventListener("click", (e) => {
   if (b) act(b.dataset.act);
 });
 $("filter").addEventListener("change", renderList);
+$("briefing").addEventListener("click", async (e) => {
+  const b = e.target.closest("button[data-team]");
+  if (!b) return;
+  await fetch("/api/recommendations/approve", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ team: b.dataset.team }) });
+  await load();
+});
 $("reset").addEventListener("click", async () => {
   await fetch("/api/reset", { method: "POST" });
   edits.clear();

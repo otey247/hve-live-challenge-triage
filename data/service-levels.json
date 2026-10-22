@@ -1,0 +1,5 @@
+{
+  "firstResponseTargetHours": 8,
+  "atRiskAfterHours": 4,
+  "note": "The same-day promise: a first reply within 8 hours of a request arriving. A request is at risk once it has waited 4 hours."
+}

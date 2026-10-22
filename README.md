@@ -1,6 +1,6 @@
-# Live Challenge: customer inbox triage
+# Live Challenge: same-day briefing for a customer support inbox
 
-The Live Challenge for **From AI Strategy to Business Value at Hyper Velocity** (Microsoft Innovation Hub, St. Louis, October 22, 2026). In about 20 minutes, with the room steering, GitHub Copilot and HVE Core take one business problem from a one-sentence executive intent to a working prototype, with a person approving every reply.
+The Live Challenge for **From AI Strategy to Business Value at Hyper Velocity** (Microsoft Innovation Hub, St. Louis, October 22, 2026). The room starts from a working product: a shared support inbox that already triages every request and drafts replies for a person to approve. In about 20 minutes, with the room steering, GitHub Copilot and HVE Core take one new capability from a one-sentence executive intent to working software.
 
 All data is fictional. Contoso Home is a made-up retailer.
 
@@ -8,23 +8,29 @@ All data is fictional. Contoso Home is a made-up retailer.
 
 | | |
 | --- | --- |
-| **Problem** | Customer requests land in a shared inbox and wait for someone to read, sort, and answer them. |
+| **Problem** | Triage works, but team leads can’t see which requests will miss the same-day promise until it’s too late. |
 | **Executive intent** | “Every customer request should reach the right team, with a good first reply, the same day.” |
-| **Success metric** | Median time to first response, from today’s baseline (set it in `data/baseline.json`) to the same day. |
-| **Constraint** | A person approves every reply before it reaches a customer. |
+| **Success metric** | Share of requests answered the same day, and median time to first response against today’s baseline (set it in `data/baseline.json`). |
+| **Constraint** | A person approves every reply and every change to who works on what. |
 
-## What is already here, and what the room builds
+## What already works, and what the room builds
 
-Already here, as a platform team would provide it:
+Already working:
 
-- `data/requests.json`: 30 requests in the shared inbox
-- `data/knowledge.json`: public help articles, plus three internal policies marked `internal: true`
-- `server.js` and `public/`: the inbox screen, approvals, and the time-to-first-response measure
-- `src/model.js`: optional Azure OpenAI access. The demo runs offline without it.
-- `tests/triage.test.js`: the acceptance criteria, failing until the build is done
-- `.github/copilot-instructions.md`: the rules Copilot follows
+- **Triage** (`src/triage.js`): every request gets a category, a team, an urgency, and plain-language reasons. 25 of 30 get a draft reply grounded in the public help articles; 5 go to a person (refunds over $200, a chargeback, a legal and safety report, a privacy request). Card numbers never appear in drafts. Its 12 tests pass.
+- **The inbox** (`server.js`, `public/`): approve or hand off each request, and watch the time-to-first-response measure move.
+- **Data**: 30 requests (`data/requests.json`), public help articles and three internal policies (`data/knowledge.json`), and the same-day service levels (`data/service-levels.json`: a first reply within 8 hours, at risk after 4).
+- **Optional model access** (`src/model.js`): Azure OpenAI can warm up the wording of drafts. The demo runs offline without it.
+- **Rules for Copilot** (`.github/copilot-instructions.md`) and **HVE Core** (the `lib/hve-core` submodule).
 
-The room builds `triage()` in `src/triage.js`: the category, team, urgency, and reasons for each request, a draft reply grounded in the help articles, and the cases a person must take.
+The room builds `briefing()` in `src/briefing.js`, the same-day briefing for team leads:
+
+- each open request marked on track, at risk, or missed against the same-day target
+- a view by team: open requests, at risk, missed, and the oldest wait
+- suggested staffing changes that a lead must approve; nothing is reassigned automatically
+- no customer names or message text in the briefing
+
+The acceptance criteria are `tests/briefing.test.js`. They fail until the build is done; until then the screen shows “Same-day briefing: not built yet”.
 
 ## Run it
 
@@ -81,16 +87,16 @@ The minute-by-minute script, with the prompt to use at each step, is in [docs/de
 
 | Ref | State |
 | --- | --- |
-| `main` | Start: the inbox loads, nothing is triaged, the tests fail |
-| `cp-1-classify` | Category, team, urgency, and reasons for every request |
-| `cp-2-drafts` | Draft replies grounded in the public help articles |
-| `cp-3-guardrails` | People take refunds over $200, chargebacks, legal and safety reports, and privacy requests; card numbers never appear in drafts; all tests pass |
-| `finished` | The full build, plus optional model wording |
+| `main` | Start: triage and the inbox fully work; the briefing tests fail and the screen says the briefing isn’t built |
+| `cp-1-risk` | Each request marked on track, at risk, or missed, with totals |
+| `cp-2-teams` | The view by team, most urgent first, with the oldest wait |
+| `cp-3-recommendations` | Staffing suggestions a lead approves, with no customer details; all tests pass |
+| `finished` | The full build |
 
 If the build runs long or the network fails, jump ahead without leaving a broken screen:
 
 ```bash
-git checkout -f cp-2-drafts
+git checkout -f cp-2-teams
 ```
 
 `-f` discards the live edits, so the checkout works mid-build.

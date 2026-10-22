@@ -1,7 +1,7 @@
 // Contoso Home support inbox: a small server with no dependencies.
 //
-// It loads the shared inbox, runs src/triage.js on every request, and serves the
-// inbox screen. Replies are never sent anywhere: "Approve" records a person's
+// It loads the shared inbox, runs src/triage.js on every request and src/briefing.js
+// across the whole inbox, and serves the inbox screen. Replies are never sent anywhere: "Approve" records a person's
 // approval, which is what the success metric measures.
 //
 // Start it with `npm start` (restarts on every file change) and open http://localhost:3000
@@ -12,6 +12,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { triage } from "./src/triage.js";
 import { createModel } from "./src/model.js";
+import { briefing } from "./src/briefing.js";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
@@ -26,6 +27,8 @@ const readJson = async (rel) => JSON.parse(await readFile(path.join(ROOT, rel), 
 const startedAt = Date.now();
 const knowledge = (await readJson("data/knowledge.json")).articles;
 const baseline = await readJson("data/baseline.json");
+const serviceLevels = await readJson("data/service-levels.json");
+const approvedRecommendations = new Set(); // teams whose recommendation a lead approved
 const model = createModel();
 const cache = new Map();
 
@@ -40,6 +43,7 @@ async function resetInbox() {
     reply: null
   }));
   cache.clear();
+  approvedRecommendations.clear();
 }
 await resetInbox();
 
@@ -69,8 +73,20 @@ async function inboxView() {
   const responseMinutes = items
     .filter((i) => i.status === "approved")
     .map((i) => (i.approvedAt - i.receivedAt) / 60_000);
+  let brief = null;
+  try {
+    const b = briefing(items, { now: Date.now(), serviceLevels });
+    brief = b && {
+      ...b,
+      recommendations: (b.recommendations || []).map((r) => ({ ...r, approved: approvedRecommendations.has(r.team) }))
+    };
+  } catch (err) {
+    brief = { error: String(err?.message || err) };
+  }
   return {
     items,
+    briefing: brief,
+    serviceLevels,
     model: { available: model.available },
     metrics: {
       total: items.length,
@@ -124,6 +140,12 @@ const server = http.createServer(async (req, res) => {
         item.approvedAt = null;
         item.reply = null;
       }
+      return send(res, 200, { ok: true });
+    }
+    if (req.method === "POST" && url.pathname === "/api/recommendations/approve") {
+      const { team } = await body(req);
+      if (typeof team !== "string" || !team) return send(res, 400, { error: "Say which team's recommendation to approve" });
+      approvedRecommendations.add(team);
       return send(res, 200, { ok: true });
     }
     if (req.method === "POST" && url.pathname === "/api/reset") {
