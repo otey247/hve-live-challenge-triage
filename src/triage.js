@@ -127,6 +127,21 @@ function draftReply(request, text, category, knowledge) {
   return { text: maskCards(body), sources: articles.map((a) => a.id), requiresApproval: true };
 }
 
+// Optional: when a model is configured, let it make the template warmer, using only the
+// facts already in the draft. Its output passes the same rules, or the template is kept.
+async function improveWording(draft, request, { model }) {
+  if (!model?.available) return null;
+  const firstName = request.customer.split(" ")[0];
+  const out = await model.complete([
+    { role: "system", content: "You rewrite customer support replies to sound warm and natural. Keep every fact exactly as given, add no new facts, promises, or links, keep the greeting and sign-off, and stay under 160 words." },
+    { role: "user", content: `Customer message:\n${request.body}\n\nDraft reply to rewrite:\n${draft.text}` }
+  ]);
+  if (!out) return null;
+  const text = maskCards(out.trim());
+  if (!text.includes(firstName) || /INTERNAL/i.test(text) || text.length > 1400) return null;
+  return text;
+}
+
 /**
  * @param {object} request  one item from data/requests.json
  * @param {object} context  { knowledge, model }
@@ -152,6 +167,11 @@ export async function triage(request, context) {
   }
 
   const draft = draftReply(request, text, category, context.knowledge);
+  const worded = await improveWording(draft, request, context);
+  if (worded) {
+    draft.text = worded;
+    reasons.push("Wording improved by the model; facts come only from the cited articles");
+  }
   return {
     category,
     team: TEAMS[category],
