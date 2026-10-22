@@ -52,6 +52,32 @@ function teamsFor(items, risks) {
   );
 }
 
+// A team with no misses still needs help once this many of its requests are at risk.
+const AT_RISK_PRESSURE = 3;
+
+// One suggestion per team that needs help. These are suggestions for a lead to approve:
+// nothing is reassigned automatically, and they name teams and counts, never customers.
+function recommendationsFor(teams) {
+  const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const out = [];
+  for (const t of teams) {
+    if (t.breached > 0) {
+      out.push({
+        team: t.team,
+        text: `${t.team}: ${plural(t.breached, "request")} past the same-day promise${t.atRisk ? ` and ${t.atRisk} more at risk` : ""}; the oldest has waited ${t.oldestWaitingHours} hours. Move one more agent onto ${t.team} until the queue clears.`,
+        requiresApproval: true
+      });
+    } else if (t.atRisk >= AT_RISK_PRESSURE) {
+      out.push({
+        team: t.team,
+        text: `${t.team}: ${plural(t.atRisk, "request")} at risk of missing the same-day reply. Ask the team to answer the oldest first.`,
+        requiresApproval: true
+      });
+    }
+  }
+  return out;
+}
+
 /**
  * @param {Array<object>} items  inbox items, as the server holds them
  * @param {object} options  { now: epoch ms, serviceLevels: data/service-levels.json }
@@ -63,10 +89,11 @@ export function briefing(items, { now, serviceLevels }) {
   const requests = {};
   for (const [id, { risk, waitingHours }] of Object.entries(risks)) requests[id] = { risk, waitingHours };
 
+  const teams = teamsFor(items, risks);
   return {
     totals: totalsFor(items, risks),
     requests,
-    teams: teamsFor(items, risks),
-    recommendations: []
+    teams,
+    recommendations: recommendationsFor(teams)
   };
 }
