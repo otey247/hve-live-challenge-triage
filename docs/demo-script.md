@@ -6,7 +6,7 @@ The Live Challenge runs 1:20 to 2:00. This script covers the build and the demo.
 
 - `main` is checked out, `npm start` is running, and the inbox is open on the main screen with every request showing “Not triaged”.
 - Run `npm test` once so the room sees the acceptance criteria fail.
-- Copilot Chat is open, with HVE Core loaded.
+- Copilot Chat is open, and **RPI Agent** appears in the agent picker (HVE Core loads from the `lib/hve-core` submodule).
 
 ## 1:20 Frame (5 min)
 
@@ -70,7 +70,7 @@ Ask: What surprised you? Where did you want a person to step in? What would stop
 
 | Problem | Response |
 | --- | --- |
-| Copilot or the network stalls | `git checkout` the next checkpoint (`cp-1-classify`, `cp-2-drafts`, `cp-3-guardrails`) and narrate what that step did |
-| A test still fails at review | Show the failure as the review doing its job, then `git checkout cp-3-guardrails` |
-| Running long | Skip from plan straight to `git checkout cp-3-guardrails` and go to the demo |
+| Copilot or the network stalls | `git checkout -f` the next checkpoint (`cp-1-classify`, `cp-2-drafts`, `cp-3-guardrails`) and narrate what that step did |
+| A test still fails at review | Show the failure as the review doing its job, then `git checkout -f cp-3-guardrails` |
+| Running long | Skip from plan straight to `git checkout -f cp-3-guardrails` and go to the demo |
 | The server stops | `npm start` again; the inbox resets, which is fine |

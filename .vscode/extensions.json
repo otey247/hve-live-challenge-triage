@@ -1,7 +1,9 @@
 {
   "recommendations": [
     "github.copilot",
-    "github.copilot-chat",
+    "github.copilot-chat"
+  ],
+  "unwantedRecommendations": [
     "ise-hve-essentials.hve-core"
   ]
 }

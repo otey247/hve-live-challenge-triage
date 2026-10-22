@@ -28,7 +28,13 @@ The room builds `triage()` in `src/triage.js`: the category, team, urgency, and 
 
 ## Run it
 
-Needs Node.js 20 or later. There is nothing to install.
+Needs Node.js 20 or later and Git. Clone with the HVE Core submodule (a ZIP download from GitHub leaves `lib/hve-core` empty):
+
+```bash
+git clone --recurse-submodules https://github.com/otey247/hve-live-challenge-triage.git
+```
+
+There is nothing else to install. From the repository folder:
 
 ```bash
 npm start
@@ -42,10 +48,32 @@ npm test
 
 ## Set up the demo laptop
 
-1. VS Code with **GitHub Copilot** signed in. Open this folder and accept the recommended extensions, which include **HVE Core** (`ise-hve-essentials.hve-core`) from the VS Code Marketplace.
+1. VS Code with **GitHub Copilot** signed in. Open this folder and accept the recommended extensions. HVE Core loads from the `lib/hve-core` submodule; see [HVE Core in this repository](#hve-core-in-this-repository).
 2. Run `npm start` and open the inbox in a browser on the main screen.
 3. Set today’s baseline in `data/baseline.json`.
 4. Optional: real model wording. Set `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, and `AZURE_OPENAI_DEPLOYMENT` before `npm start`. The header shows “Model: Azure OpenAI”. Leave them unset on an unreliable network.
+
+## HVE Core in this repository
+
+[HVE Core](https://github.com/microsoft/hve-core) is a Git submodule at `lib/hve-core`, pinned to a tested commit so everyone who clones this repository gets the version used in the demo. `.vscode/settings.json` points Copilot Chat at its agents, instructions, and skills: the research, plan, implement, and review workflow, design thinking, project planning, coding standards, security, and Responsible AI. HVE Core writes its research and plans to `.copilot-tracking/`, which is ignored.
+
+Check it loaded: open Copilot Chat (`Ctrl+Alt+I`), open the agent picker, and look for **RPI Agent**; typing `/` should offer `/rpi-research`. If not, run **Developer: Reload Window**.
+
+If you already have the HVE Core extension installed, disable it for this workspace (Extensions view, HVE Core, **Disable (Workspace)**) so its agents don’t appear twice.
+
+If you cloned without the submodule:
+
+```bash
+git submodule update --init --recursive
+```
+
+To move to a newer HVE Core, test it, then commit the new pin:
+
+```bash
+git submodule update --remote lib/hve-core
+```
+
+HVE Core is fast-moving and has no support commitment, so update between events, not on the day.
 
 The minute-by-minute script, with the prompt to use at each step, is in [docs/demo-script.md](docs/demo-script.md).
 
@@ -62,18 +90,20 @@ The minute-by-minute script, with the prompt to use at each step, is in [docs/de
 If the build runs long or the network fails, jump ahead without leaving a broken screen:
 
 ```bash
-git checkout cp-2-drafts
+git checkout -f cp-2-drafts
 ```
+
+`-f` discards the live edits, so the checkout works mid-build.
 
 To reset for a rehearsal:
 
 ```bash
-git checkout main
+git checkout -f main
 ```
 
 ## Rehearsal checklist
 
 - Run the full build twice on the Hub’s network, timed, and record one clean run as the fallback.
-- Confirm the HVE Core extension loads and `/rpi-research` appears in Copilot Chat.
+- Confirm **RPI Agent** appears in the Copilot Chat agent picker and `/rpi-research` is offered (see [HVE Core in this repository](#hve-core-in-this-repository)).
 - Check the inbox is readable from the back of the room; zoom the browser if needed.
 - Have the `finished` branch checked out in a second clone, ready to show.

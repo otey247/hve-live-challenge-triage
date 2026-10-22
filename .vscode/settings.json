@@ -1,0 +1,38 @@
+{
+  "chat.agentFilesLocations": {
+    "lib/hve-core/.github/agents/hve-core": true,
+    "lib/hve-core/.github/agents/hve-core/subagents": true,
+    "lib/hve-core/.github/agents/design-thinking": true,
+    "lib/hve-core/.github/agents/project-planning": true,
+    "lib/hve-core/.github/agents/project-planning/subagents": true,
+    "lib/hve-core/.github/agents/coding-standards": true,
+    "lib/hve-core/.github/agents/coding-standards/subagents": true,
+    "lib/hve-core/.github/agents/security": true,
+    "lib/hve-core/.github/agents/security/subagents": true,
+    "lib/hve-core/.github/agents/rai-planning": true,
+    "lib/hve-core/.github/agents/rai-planning/subagents": true,
+    ".github/agents": true
+  },
+  "chat.instructionsFilesLocations": {
+    "lib/hve-core/.github/instructions/hve-core": true,
+    "lib/hve-core/.github/instructions/shared": true,
+    "lib/hve-core/.github/instructions/coding-standards": true,
+    "lib/hve-core/.github/instructions/coding-standards/code-review": true,
+    "lib/hve-core/.github/instructions/design-thinking": true,
+    "lib/hve-core/.github/instructions/project-planning": true,
+    "lib/hve-core/.github/instructions/security": true,
+    "lib/hve-core/.github/instructions/rai-planning": true,
+    ".github/instructions": true
+  },
+  "chat.agentSkillsLocations": {
+    "lib/hve-core/.github/skills/rpi": true,
+    "lib/hve-core/.github/skills/hve-core": true,
+    "lib/hve-core/.github/skills/coding-standards": true,
+    "lib/hve-core/.github/skills/design-thinking": true,
+    "lib/hve-core/.github/skills/project-planning": true,
+    "lib/hve-core/.github/skills/security": true,
+    "lib/hve-core/.github/skills/rai": true,
+    "lib/hve-core/.github/skills/shared": true,
+    ".github/skills": true
+  }
+}
