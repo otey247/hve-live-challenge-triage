@@ -56,6 +56,39 @@ const OPENERS = {
   general: () => "Thank you for your message."
 };
 
+// Cases a person must take, with no draft. Each rule names the internal policy behind it.
+// Internal policies shape these decisions but are never quoted to the customer.
+const PERSON_RULES = [
+  {
+    applies: (text) => /\b(chargeback|lawyer|attorney|legal action|sue)\b/i.test(text),
+    reason: () => "Mentions a chargeback or legal action, so the customer care lead handles it",
+    policy: "KB-901"
+  },
+  {
+    applies: (text) => /\b(injur\w*|hurt|hit my|collapsed|fire)\b/i.test(text),
+    reason: () => "Reports an injury or safety issue, so the customer care lead handles it",
+    policy: "KB-901"
+  },
+  {
+    applies: (text) => /\b(delete my account|personal data|erase my data)\b/i.test(text),
+    reason: () => "Asks to delete their account or personal data, so the privacy team verifies and handles it",
+    policy: "KB-902"
+  },
+  {
+    applies: (text, category) => category === "returns_refunds" && largestAmount(text) > 200,
+    reason: (text) => `Refund of $${largestAmount(text).toLocaleString("en-US")} is above the $200 agent limit, so a team lead must approve it`,
+    policy: "KB-900"
+  }
+];
+
+function largestAmount(text) {
+  const amounts = [...text.matchAll(/\$\s?([\d,]+(?:\.\d{2})?)/g)].map((m) => Number(m[1].replace(/,/g, "")));
+  return amounts.length ? Math.max(...amounts) : 0;
+}
+
+// Never repeat a payment card number: keep only the last four digits.
+const maskCards = (text) => text.replace(/\b(?:\d[ -]?){12,15}(\d{4})\b/g, "the card ending $1");
+
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const phrase = (p) => new RegExp(`\\b${escapeRe(p)}\\b`, "i");
 const firstMatch = (text, words) => words.find((w) => phrase(w).test(text));
@@ -91,7 +124,7 @@ function draftReply(request, text, category, knowledge) {
     "If anything else comes up, just reply to this message.",
     "Best regards,\nContoso Home support"
   ].join("\n\n");
-  return { text: body, sources: articles.map((a) => a.id), requiresApproval: true };
+  return { text: maskCards(body), sources: articles.map((a) => a.id), requiresApproval: true };
 }
 
 /**
@@ -102,13 +135,28 @@ export async function triage(request, context) {
   const text = `${request.subject}\n${request.body}`;
   const { category, reason: categoryReason } = classify(text);
   const { urgency, reason: urgencyReason } = urgencyOf(text, category);
-  const draft = draftReply(request, text, category, context.knowledge);
+  const reasons = [categoryReason, `Routed to ${TEAMS[category]}`, urgencyReason];
 
+  const personRules = PERSON_RULES.filter((rule) => rule.applies(text, category));
+  if (personRules.length) {
+    const whys = personRules.map((rule) => rule.reason(text));
+    return {
+      category,
+      team: TEAMS[category],
+      urgency: "high",
+      reasons: [...reasons, ...personRules.map((rule, i) => `Needs a person: ${whys[i]} (policy ${rule.policy})`)],
+      draft: null,
+      needsPerson: true,
+      needsPersonReason: whys.join(". ")
+    };
+  }
+
+  const draft = draftReply(request, text, category, context.knowledge);
   return {
     category,
     team: TEAMS[category],
     urgency,
-    reasons: [categoryReason, `Routed to ${TEAMS[category]}`, urgencyReason, `Reply grounded in ${draft.sources.join(", ")}`],
+    reasons: [...reasons, `Reply grounded in ${draft.sources.join(", ")}`],
     draft,
     needsPerson: false,
     needsPersonReason: null
