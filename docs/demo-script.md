@@ -1,6 +1,6 @@
 # Demo script
 
-The Live Challenge runs 1:20 to 2:00. This script covers the build and the demo. Keep the deck’s build clock (slide 24) on the main screen and work on the second screen, or switch between them at each decision point.
+The Live Challenge runs 1:20 to 2:00. This script covers the build and the demo. Keep the deck’s build clock (slide 25) on the main screen and work on the second screen, or switch between them at each decision point.
 
 ## Before you start
 
