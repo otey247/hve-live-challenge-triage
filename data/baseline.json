@@ -1,0 +1,4 @@
+{
+  "medianFirstResponseHours": null,
+  "note": "Set today's median time to first response, in hours, before the event. The header shows it next to the live result."
+}

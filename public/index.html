@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contoso Home · Support inbox</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>Contoso Home</h1>
+    <span>Shared support inbox</span>
+  </div>
+  <div class="top-actions">
+    <span id="model" class="pill"></span>
+    <button id="reset" class="btn ghost" type="button">Reset inbox</button>
+  </div>
+</header>
+
+<section class="metrics" id="metrics" aria-live="polite"></section>
+
+<main class="split">
+  <section class="list" aria-label="Requests">
+    <div class="list-head">
+      <h2>Requests</h2>
+      <label for="filter" class="sr">Show</label>
+      <select id="filter">
+        <option value="all">All</option>
+        <option value="untriaged">Not triaged</option>
+        <option value="draft">Draft ready</option>
+        <option value="person">Needs a person</option>
+        <option value="approved">Approved</option>
+      </select>
+    </div>
+    <ul id="items"></ul>
+  </section>
+  <section class="detail" id="detail" aria-label="Selected request">
+    <p class="empty">Select a request to see its triage and draft reply.</p>
+  </section>
+</main>
+
+<footer class="foot">Fictional data. Replies are never sent: approving records that a person checked the reply, which is what the time-to-first-response measure counts.</footer>
+<script src="/app.js" type="module"></script>
+</body>
+</html>
