@@ -33,6 +33,25 @@ function totalsFor(items, risks) {
   return totals;
 }
 
+// The queue by team, most urgent first: most missed, then most at risk, then oldest wait.
+function teamsFor(items, risks) {
+  const teams = new Map();
+  for (const item of items) {
+    const r = risks[item.id];
+    if (r.risk === "answered") continue;
+    const name = item.triage?.team || "Unassigned";
+    const t = teams.get(name) || { team: name, open: 0, atRisk: 0, breached: 0, oldestWaitingHours: 0 };
+    t.open++;
+    if (r.risk === "at_risk") t.atRisk++;
+    if (r.risk === "breached") t.breached++;
+    t.oldestWaitingHours = Math.max(t.oldestWaitingHours, r.waitingHours);
+    teams.set(name, t);
+  }
+  return [...teams.values()].sort(
+    (a, b) => b.breached - a.breached || b.atRisk - a.atRisk || b.oldestWaitingHours - a.oldestWaitingHours
+  );
+}
+
 /**
  * @param {Array<object>} items  inbox items, as the server holds them
  * @param {object} options  { now: epoch ms, serviceLevels: data/service-levels.json }
@@ -47,7 +66,7 @@ export function briefing(items, { now, serviceLevels }) {
   return {
     totals: totalsFor(items, risks),
     requests,
-    teams: [],
+    teams: teamsFor(items, risks),
     recommendations: []
   };
 }
